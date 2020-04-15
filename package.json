@@ -1,0 +1,29 @@
+{
+  "name": "zz",
+  "version": "1.0.0",
+  "description": "",
+  "main": "test.js",
+  "dependencies": {
+    "@types/node": "^7.0.70",
+    "@types/q": "^1.5.1",
+    "@types/xmldom": "^0.1.29",
+    "azure-devops-node-api": "^10.1.1",
+    "azure-pipelines-task-lib": "^2.9.3",
+    "fs": "^0.0.1-security",
+    "handlebars": "^4.7.3",
+    "handlebars-helpers": "^0.10.0",
+    "ncp": "^2.0.0",
+    "request": "^2.88.0",
+    "tsd": "^0.6.5",
+    "typed-rest-client": "^1.7.3",
+    "typescript": "^3.8.3",
+    "vsts-task-lib": "^2.6.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
