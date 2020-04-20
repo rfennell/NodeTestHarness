@@ -44,11 +44,11 @@ function run() {
         var _this = this;
         return __generator(this, function (_a) {
             promise = new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                var token, teamProject, org, commitID, authHandler, instance, gitApi, filter, allPullRequests, matches, m1, err_1;
+                var token, teamProject, org, commitID, authHandler, instance, gitApi, filter, allPullRequests, allPullRequests, x, matches, m1, err_1;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            _a.trys.push([0, 3, , 4]);
+                            _a.trys.push([0, 4, , 5]);
                             token = "3v5xiiwlgg7ffsqd3inhi65fngsn3bhoxnlnebhtqvuh6vyiszya";
                             teamProject = "GitHub";
                             org = "richardfennell";
@@ -72,7 +72,13 @@ function run() {
                         case 2:
                             allPullRequests = _a.sent();
                             console.log(allPullRequests.length);
-                            matches = allPullRequests.filter(function (pr) { return pr.lastMergeCommit.commitId === commitID; });
+                            return [4 /*yield*/, gitApi.getPullRequestsByProject("", filter)];
+                        case 3:
+                            allPullRequests = _a.sent();
+                            console.log(allPullRequests.length);
+                            x = {};
+                            allPullRequests.push(x);
+                            matches = allPullRequests.filter(function (pr) { return pr && pr.lastMergeCommit && pr.lastMergeCommit.commitId === commitID; });
                             console.log(matches.length);
                             m1 = [];
                             allPullRequests.forEach(function (pr) {
@@ -87,12 +93,12 @@ function run() {
                             });
                             console.log(m1.length);
                             resolve("End");
-                            return [3 /*break*/, 4];
-                        case 3:
+                            return [3 /*break*/, 5];
+                        case 4:
                             err_1 = _a.sent();
                             reject(err_1);
-                            return [3 /*break*/, 4];
-                        case 4: return [2 /*return*/];
+                            return [3 /*break*/, 5];
+                        case 5: return [2 /*return*/];
                     }
                 });
             }); });

@@ -4,13 +4,14 @@ import * as webApi from "azure-devops-node-api/WebApi";
 import {  IGitApi, GitApi } from "azure-devops-node-api/GitApi";
 import { GitCommit, GitPullRequest, GitPullRequestQueryType, GitPullRequestSearchCriteria, PullRequestStatus } from "azure-devops-node-api/interfaces/GitInterfaces";
 import { IBuildApi } from "azure-devops-node-api/BuildApi";
+import { all } from "q";
 
 async function run (): Promise<string> {
 
     var promise = new Promise<string>(async (resolve, reject) => {
 
         try {
-            let token: string = "<your pat>";
+            let token: string = "<PAT>";
             var teamProject = "GitHub"
             var org = "richardfennell";
             var commitID = "b0fa863823f153861f7ba035273b82510be50054";
@@ -32,9 +33,15 @@ async function run (): Promise<string> {
             };
             var allPullRequests: GitPullRequest[] = await gitApi.getPullRequestsByProject( teamProject, filter);
             console.log(allPullRequests.length);
+
+            var allPullRequests: GitPullRequest[] = await gitApi.getPullRequestsByProject( "", filter);
+            console.log(allPullRequests.length);
            
+            var x: GitPullRequest = {};
+            allPullRequests.push(x);
+
             // this is the old logic 
-            var matches = allPullRequests.filter(pr => pr.lastMergeCommit.commitId === commitID);
+            var matches = allPullRequests.filter(pr => pr && pr.lastMergeCommit && pr.lastMergeCommit.commitId === commitID);
             console.log(matches.length);
 
             var m1: GitPullRequest[] = []
