@@ -1,10 +1,35 @@
 import tl = require("azure-pipelines-task-lib/task");
 import { IRequestHandler } from "azure-devops-node-api/interfaces/common/VsoBaseInterfaces";
 import * as webApi from "azure-devops-node-api/WebApi";
-import {  IGitApi, GitApi } from "azure-devops-node-api/GitApi";
-import { GitCommit, GitPullRequest, GitPullRequestQueryType, GitPullRequestSearchCriteria, PullRequestStatus } from "azure-devops-node-api/interfaces/GitInterfaces";
 import { IBuildApi } from "azure-devops-node-api/BuildApi";
-import { all } from "q";
+import { Build, Change } from "azure-devops-node-api/interfaces/BuildInterfaces";
+import { throws } from "assert";
+import fs  = require("fs");
+
+//import { IReleaseApi } from "azure-devops-node-api/ReleaseApi";
+//import * as vstsInterfaces from "azure-devops-node-api/interfaces/common/VsoBaseInterfaces";
+
+//import { Release } from "azure-devops-node-api/interfaces/ReleaseInterfaces";
+
+//import { IGitApi } from "azure-devops-node-api/GitApi";
+//import { IWorkItemTrackingApi } from "azure-devops-node-api/WorkItemTrackingApi";
+import { ResourceRef } from "azure-devops-node-api/interfaces/common/VSSInterfaces";
+//import { WorkItemExpand, WorkItem, ArtifactUriQuery } from "azure-devops-node-api/interfaces/WorkItemTrackingInterfaces";
+//import { GitPullRequest, GitPullRequestQueryType } from "azure-devops-node-api/interfaces/GitInterfaces";
+
+
+
+
+class BuildDetails {
+    build: Build;
+    commits: Change[];
+    workitems: ResourceRef[];
+    constructor ( build: Build, commits: Change[], workitems: ResourceRef[]) {
+        this.build = build;
+        this.commits = commits;
+        this.workitems = workitems;
+   }
+}
 
 async function run (): Promise<string> {
 
@@ -13,53 +38,44 @@ async function run (): Promise<string> {
         try {
             let token: string = "<PAT>";
             var teamProject = "GitHub"
+            var buildDefId = 53;
             var org = "richardfennell";
-            var commitID = "b0fa863823f153861f7ba035273b82510be50054";
-
 
             let authHandler = webApi.getPersonalAccessTokenHandler(token); 
             let instance = new webApi.WebApi(`https://dev.azure.com/${org}`, authHandler);
+            var buildApi: IBuildApi = await instance.getBuildApi();
 
-            var gitApi: IGitApi = await instance.getGitApi();
-            var filter: GitPullRequestSearchCriteria = {
-                creatorId: "",
-                includeLinks: true,
-                repositoryId: "",
-                reviewerId: "",
-                sourceRefName: "",
-                sourceRepositoryId: "",
-                status: PullRequestStatus.Completed,
-                targetRefName: ""
-            };
-            var allPullRequests: GitPullRequest[] = await gitApi.getPullRequestsByProject( teamProject, filter);
-            console.log(allPullRequests.length);
+            let builds = await buildApi.getBuilds( teamProject , [buildDefId]);
+            console.log(`Found ${builds.length} builds`);
+            var xxx: BuildDetails[] = [];
 
-            var allPullRequests: GitPullRequest[] = await gitApi.getPullRequestsByProject( "", filter);
-            console.log(allPullRequests.length);
-           
-            var x: GitPullRequest = {};
-            allPullRequests.push(x);
+            for (var build of builds) {
 
-            // this is the old logic 
-            var matches = allPullRequests.filter(pr => pr && pr.lastMergeCommit && pr.lastMergeCommit.commitId === commitID);
-            console.log(matches.length);
+                console.log(`Getting the details of ${build.id}`);
+                var buildCommits = await buildApi.getBuildChanges(teamProject, build.id);
+                var buildWorkitems = await buildApi.getBuildWorkItemsRefs(teamProject, build.id);
 
-            var m1: GitPullRequest[] = []
-            allPullRequests.forEach(pr => {
-                if (pr.lastMergeCommit) {
-                    if (pr.lastMergeCommit.commitId === commitID) 
-                    {
-                        m1.push(pr);
-                    }
-                } else {
-                    console.log(`PR ${pr.pullRequestId} does not have a lastMergeCommit`);
-                }
+                xxx.push(new BuildDetails(build, buildCommits, buildWorkitems));
+
+                break;
+            }
+
+            const handlebars = require("handlebars");
+            const helpers = require("handlebars-helpers")({
+                handlebars: handlebars
             });
 
-            console.log(m1.length);
+            var template = fs.readFileSync("templatefile.md", "utf8").toString();
 
-            resolve (`End`);
-            
+            var handlebarsTemplate = handlebars.compile(template);
+
+            var output = handlebarsTemplate({
+                "builds": xxx
+             });
+
+             fs.writeFileSync("out.md", output);
+
+            resolve (`Called API ${xxx.length} times`);
         } catch (err) {
             reject (err);
         }

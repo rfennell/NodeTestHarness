@@ -37,68 +37,77 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var webApi = require("azure-devops-node-api/WebApi");
-var GitInterfaces_1 = require("azure-devops-node-api/interfaces/GitInterfaces");
+var fs = require("fs");
+//import { WorkItemExpand, WorkItem, ArtifactUriQuery } from "azure-devops-node-api/interfaces/WorkItemTrackingInterfaces";
+//import { GitPullRequest, GitPullRequestQueryType } from "azure-devops-node-api/interfaces/GitInterfaces";
+var BuildDetails = /** @class */ (function () {
+    function BuildDetails(build, commits, workitems) {
+        this.build = build;
+        this.commits = commits;
+        this.workitems = workitems;
+    }
+    return BuildDetails;
+}());
 function run() {
     return __awaiter(this, void 0, void 0, function () {
         var promise;
         var _this = this;
         return __generator(this, function (_a) {
             promise = new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                var token, teamProject, org, commitID, authHandler, instance, gitApi, filter, allPullRequests, allPullRequests, x, matches, m1, err_1;
+                var token, teamProject, buildDefId, org, authHandler, instance, buildApi, builds, xxx, _i, builds_1, build, buildCommits, buildWorkitems, handlebars, helpers, template, handlebarsTemplate, output, err_1;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            _a.trys.push([0, 4, , 5]);
+                            _a.trys.push([0, 8, , 9]);
                             token = "3v5xiiwlgg7ffsqd3inhi65fngsn3bhoxnlnebhtqvuh6vyiszya";
                             teamProject = "GitHub";
+                            buildDefId = 53;
                             org = "richardfennell";
-                            commitID = "b0fa863823f153861f7ba035273b82510be50054";
                             authHandler = webApi.getPersonalAccessTokenHandler(token);
                             instance = new webApi.WebApi("https://dev.azure.com/" + org, authHandler);
-                            return [4 /*yield*/, instance.getGitApi()];
+                            return [4 /*yield*/, instance.getBuildApi()];
                         case 1:
-                            gitApi = _a.sent();
-                            filter = {
-                                creatorId: "",
-                                includeLinks: true,
-                                repositoryId: "",
-                                reviewerId: "",
-                                sourceRefName: "",
-                                sourceRepositoryId: "",
-                                status: GitInterfaces_1.PullRequestStatus.Completed,
-                                targetRefName: ""
-                            };
-                            return [4 /*yield*/, gitApi.getPullRequestsByProject(teamProject, filter)];
+                            buildApi = _a.sent();
+                            return [4 /*yield*/, buildApi.getBuilds(teamProject, [buildDefId])];
                         case 2:
-                            allPullRequests = _a.sent();
-                            console.log(allPullRequests.length);
-                            return [4 /*yield*/, gitApi.getPullRequestsByProject("", filter)];
+                            builds = _a.sent();
+                            console.log("Found " + builds.length + " builds");
+                            xxx = [];
+                            _i = 0, builds_1 = builds;
+                            _a.label = 3;
                         case 3:
-                            allPullRequests = _a.sent();
-                            console.log(allPullRequests.length);
-                            x = {};
-                            allPullRequests.push(x);
-                            matches = allPullRequests.filter(function (pr) { return pr && pr.lastMergeCommit && pr.lastMergeCommit.commitId === commitID; });
-                            console.log(matches.length);
-                            m1 = [];
-                            allPullRequests.forEach(function (pr) {
-                                if (pr.lastMergeCommit) {
-                                    if (pr.lastMergeCommit.commitId === commitID) {
-                                        m1.push(pr);
-                                    }
-                                }
-                                else {
-                                    console.log("PR " + pr.pullRequestId + " does not have a lastMergeCommit");
-                                }
-                            });
-                            console.log(m1.length);
-                            resolve("End");
-                            return [3 /*break*/, 5];
+                            if (!(_i < builds_1.length)) return [3 /*break*/, 7];
+                            build = builds_1[_i];
+                            console.log("Getting the details of " + build.id);
+                            return [4 /*yield*/, buildApi.getBuildChanges(teamProject, build.id)];
                         case 4:
+                            buildCommits = _a.sent();
+                            return [4 /*yield*/, buildApi.getBuildWorkItemsRefs(teamProject, build.id)];
+                        case 5:
+                            buildWorkitems = _a.sent();
+                            xxx.push(new BuildDetails(build, buildCommits, buildWorkitems));
+                            return [3 /*break*/, 7];
+                        case 6:
+                            _i++;
+                            return [3 /*break*/, 3];
+                        case 7:
+                            handlebars = require("handlebars");
+                            helpers = require("handlebars-helpers")({
+                                handlebars: handlebars
+                            });
+                            template = fs.readFileSync("templatefile.md", "utf8").toString();
+                            handlebarsTemplate = handlebars.compile(template);
+                            output = handlebarsTemplate({
+                                "builds": xxx
+                            });
+                            fs.writeFileSync("out.md", output);
+                            resolve("Called API " + xxx.length + " times");
+                            return [3 /*break*/, 9];
+                        case 8:
                             err_1 = _a.sent();
                             reject(err_1);
-                            return [3 /*break*/, 5];
-                        case 5: return [2 /*return*/];
+                            return [3 /*break*/, 9];
+                        case 9: return [2 /*return*/];
                     }
                 });
             }); });
