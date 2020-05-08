@@ -38,13 +38,22 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var webApi = require("azure-devops-node-api/WebApi");
 var fs = require("fs");
-//import { WorkItemExpand, WorkItem, ArtifactUriQuery } from "azure-devops-node-api/interfaces/WorkItemTrackingInterfaces";
-//import { GitPullRequest, GitPullRequestQueryType } from "azure-devops-node-api/interfaces/GitInterfaces";
+var WorkItemTrackingInterfaces_1 = require("azure-devops-node-api/interfaces/WorkItemTrackingInterfaces");
 var BuildDetails = /** @class */ (function () {
     function BuildDetails(build, commits, workitems) {
         this.build = build;
-        this.commits = commits;
-        this.workitems = workitems;
+        if (commits) {
+            this.commits = commits;
+        }
+        else {
+            this.commits = [];
+        }
+        if (workitems) {
+            this.workitems = workitems;
+        }
+        else {
+            this.workitems = [];
+        }
     }
     return BuildDetails;
 }());
@@ -54,7 +63,7 @@ function run() {
         var _this = this;
         return __generator(this, function (_a) {
             promise = new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                var token, teamProject, buildDefId, org, authHandler, instance, buildApi, builds, xxx, _i, builds_1, build, buildCommits, buildWorkitems, handlebars, helpers, template, handlebarsTemplate, output, err_1;
+                var token, teamProject, buildDefId, org, authHandler, instance, buildApi, releaseApi, workItemTrackingApi, globalWorkItems, workItemIds, fullWorkItems, indexStart, indexEnd, subList, subListDetails, xxx, handlebars, helpers, tools, template, handlebarsTemplate, output, err_1;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -68,37 +77,46 @@ function run() {
                             return [4 /*yield*/, instance.getBuildApi()];
                         case 1:
                             buildApi = _a.sent();
-                            return [4 /*yield*/, buildApi.getBuilds(teamProject, [buildDefId])];
+                            return [4 /*yield*/, instance.getReleaseApi()];
                         case 2:
-                            builds = _a.sent();
-                            console.log("Found " + builds.length + " builds");
-                            xxx = [];
-                            _i = 0, builds_1 = builds;
-                            _a.label = 3;
+                            releaseApi = _a.sent();
+                            return [4 /*yield*/, instance.getWorkItemTrackingApi()];
                         case 3:
-                            if (!(_i < builds_1.length)) return [3 /*break*/, 7];
-                            build = builds_1[_i];
-                            console.log("Getting the details of " + build.id);
-                            return [4 /*yield*/, buildApi.getBuildChanges(teamProject, build.id)];
+                            workItemTrackingApi = _a.sent();
+                            return [4 /*yield*/, buildApi.getWorkItemsBetweenBuilds(teamProject, 7797, 7800)];
                         case 4:
-                            buildCommits = _a.sent();
-                            return [4 /*yield*/, buildApi.getBuildWorkItemsRefs(teamProject, build.id)];
+                            globalWorkItems = _a.sent();
+                            workItemIds = globalWorkItems.map(function (wi) { return parseInt(wi.id); });
+                            fullWorkItems = [];
+                            if (!(workItemIds.length > 0)) return [3 /*break*/, 7];
+                            indexStart = 0;
+                            indexEnd = (workItemIds.length > 200) ? 200 : workItemIds.length;
+                            _a.label = 5;
                         case 5:
-                            buildWorkitems = _a.sent();
-                            xxx.push(new BuildDetails(build, buildCommits, buildWorkitems));
-                            return [3 /*break*/, 7];
+                            if (!((indexEnd <= workItemIds.length) && (indexStart !== indexEnd))) return [3 /*break*/, 7];
+                            subList = workItemIds.slice(indexStart, indexEnd);
+                            return [4 /*yield*/, workItemTrackingApi.getWorkItems(subList, null, null, WorkItemTrackingInterfaces_1.WorkItemExpand.Fields, null)];
                         case 6:
-                            _i++;
-                            return [3 /*break*/, 3];
+                            subListDetails = _a.sent();
+                            fullWorkItems = fullWorkItems.concat(subListDetails);
+                            indexStart = indexEnd;
+                            indexEnd = ((workItemIds.length - indexEnd) > 200) ? indexEnd + 200 : workItemIds.length;
+                            return [3 /*break*/, 5];
                         case 7:
+                            xxx = [];
                             handlebars = require("handlebars");
                             helpers = require("handlebars-helpers")({
                                 handlebars: handlebars
                             });
+                            handlebars.registerHelper('json', function (context) {
+                                return JSON.stringify(context);
+                            });
+                            tools = require("c:/projects/github/NodeTestHarness/each_with_sort_by_field.js");
+                            handlebars.registerHelper(tools);
                             template = fs.readFileSync("templatefile.md", "utf8").toString();
                             handlebarsTemplate = handlebars.compile(template);
                             output = handlebarsTemplate({
-                                "builds": xxx
+                                "workItems": fullWorkItems
                             });
                             fs.writeFileSync("out.md", output);
                             resolve("Called API " + xxx.length + " times");
